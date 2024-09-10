@@ -23,7 +23,8 @@ function New-WordleGuess {
         [parameter(Mandatory = $true)]
         [string]$word
     )
-    # now i know its a string with 5 letters. test in word list,
+    # now i know its a string with 5 letters in word list. 
+    # add the word to guessed words and send the word out of the function for usage.
     [void]$Global:GuessedWords.add($word)
     $word
 }
