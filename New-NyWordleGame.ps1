@@ -61,13 +61,14 @@ function New-NyWordleGame {
         $MaxGuess = 6
         # guessed word, avoid people guessnig same word multiple times 
         $Global:GuessedWords = New-Object -TypeName System.Collections.ArrayList
+        # list of grays 
+        $grays = New-Object -TypeName System.Collections.ArrayList
     }
     
     process {
         # it starts here
         while ($guesscounter -le $MaxGuess) {
-            write-host "Guess number $guessCounter/$maxguess!"
-            $Guess = read-host -Prompt 'Enter your Wordle Guess, 5 letters please'
+            $Guess = read-host -Prompt "Guess $guessCounter/$maxguess! Enter a 5 letter word"
             if (New-WordleGuess -word $Guess) {
                 $coloredWord = ""
                 $GuessCharArray = $Guess.ToCharArray()
@@ -80,18 +81,28 @@ function New-NyWordleGame {
                     else {
                         #this should do the yellows and grays
                         if ($AnswerCharArray -contains $GuessCharArray[$i]) {
-                           #  write-host 'this is YELLOW.'
+                            #  write-host 'this is YELLOW.'
                             $coloredWord += "${yellow}$($GuessCharArray[$i])${reset}"
                             # missig logic for multiples
                         }
                         else {
-                           # write-host 'this is GRAY'
-                            $coloredWord += "${lightGray}$($GuessCharArray[$i])${reset}"
+                            # write-host 'this is GRAY'
+                            $coloredWord += "${darkGray}$($GuessCharArray[$i])${reset}"
+                            if ($GuessCharArray[$i] -notin $grays) {
+                                [void]$grays.add($GuessCharArray[$i])
+                                # list of letters that its not containing
+
+                            }
+                            
+
                         }
                     }
 
                 }
                 $coloredWord
+                $string = ""
+                $grays | sort-object | foreach-object { $string += "$_ " } 
+                write-host "Not in word: $($string.ToUpper())"
                 #ANswer is here!
                 if ($Answer -eq $guess) {
                     Write-host "Winner winner chicken dinner"
