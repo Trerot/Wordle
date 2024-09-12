@@ -37,25 +37,29 @@ function New-NyWordleGame {
     
     begin {
         # to start with, i need the alphabet.
-        $uppercaseAlphabet = 65..90 | ForEach-Object { [char]$_ }
-        $lowercaseAlphabet = 97..122 | ForEach-Object { [char]$_ }
+        #$uppercaseAlphabet = 65..90 | ForEach-Object { [char]$_ }
+        # $lowercaseAlphabet = 97..122 | ForEach-Object { [char]$_ }
         # and i need to import all the words
         $global:WordList = Get-Content .\NyTimesWordleList.json | ConvertFrom-Json
 
         # and i need the colors
         $yellow = "`e[33m"
         $green = "`e[32m"
-        $lightGray = "`e[37m"
+        # $lightGray = "`e[37m"
         $darkGray = "`e[90m"
         $reset = "`e[0m"
 
         # and for each game, i need an Answer
         $Answer = $WordList | Get-Random
         # for testing purposes i set it manually
-        $Answer = 'DUDES'
+        #$Answer = 'daddy'
         $AnswerCharArray = $answer.ToCharArray()
         # welcome banner of some sort
-        Write-host 'Welcome to wordle'
+        clear-host
+        write-host "The great Game of Wordle!"
+        $grid = "-----", "-----", "-----", "-----", "-----", "-----"
+        $grid
+        Write-host 'ready, set, go!'
 
         $guessCounter = 1
         $MaxGuess = 6
@@ -68,38 +72,75 @@ function New-NyWordleGame {
     process {
         # it starts here
         while ($guesscounter -le $MaxGuess) {
+            $skip = $null
             $Guess = read-host -Prompt "Guess $guessCounter/$maxguess! Enter a 5 letter word"
             if (New-WordleGuess -word $Guess) {
                 $coloredWord = ""
+                $uncoloredword = New-Object -TypeName System.Collections.ArrayList
                 $GuessCharArray = $Guess.ToCharArray()
-
+                #do something hear about 
                 for ($i = 0; $i -lt $GuessCharArray.Count; $i++) {
                     if ($AnswerCharArray[$i] -eq $GuessCharArray[$i]) {
                         # write-host 'this is GREEN'
                         $coloredWord += "${green}$($GuessCharArray[$i])${reset}"
+                        $uncoloredword.add( $GuessCharArray[$i])
                     }
                     else {
                         #this should do the yellows and grays
                         if ($AnswerCharArray -contains $GuessCharArray[$i]) {
                             #  write-host 'this is YELLOW.'
-                            $coloredWord += "${yellow}$($GuessCharArray[$i])${reset}"
-                            # missig logic for multiples
+                            $answerMatches = ($AnswerCharArray | select-string $GuessCharArray[$i] -AllMatches).Matches.count
+
+                            $guessMatches = ($GuessCharArray | select-string $GuessCharArray[$i] -AllMatches).Matches.count
+                            # so if the answer contains 2, and the guess contains 1, only make the first one yellow. best bet is to set a $skip if matches a letter
+                            if ($skip) {
+                                $coloredWord += "${darkGray}$($GuessCharArray[$i])${reset}"
+                                $uncoloredword.add( $GuessCharArray[$i])
+                                $skip = $null
+                            }
+                            else {
+                                if ( $answerMatches -eq 1 -and $guessMatches -eq 2 ) {
+                                    if ($uncoloredword -contains $GuessCharArray[$i]) {
+                                        # contains a green
+                                        $skip = $GuessCharArray[$i]
+                                        $coloredWord += "${darkGray}$($GuessCharArray[$i])${reset}"
+                                    }
+                                    else{
+                                        # contains 2 yellow.
+                                    $skip = $GuessCharArray[$i]
+                                    $coloredWord += "${yellow}$($GuessCharArray[$i])${reset}"
+                                    }
+
+                                }
+                                elseif($guessMatches -gt 2 -and $answerMatches -eq 1){
+                                    
+                                }
+
+                                else {
+                                    $coloredWord += "${yellow}$($GuessCharArray[$i])${reset}"
+                                }
+
+                                $uncoloredword.add( $GuessCharArray[$i])
+                                # this fails with one green, L, means i get one Green and one Yellow L, even though answer only has 1
+                            }
                         }
                         else {
                             # write-host 'this is GRAY'
                             $coloredWord += "${darkGray}$($GuessCharArray[$i])${reset}"
+                            $uncoloredword.add( $GuessCharArray[$i])
                             if ($GuessCharArray[$i] -notin $grays) {
                                 [void]$grays.add($GuessCharArray[$i])
-                                # list of letters that its not containing
+                                # list of letters that the word is not containing
 
                             }
-                            
-
                         }
                     }
 
                 }
-                $coloredWord
+                Clear-Host
+                write-host "The great Game of Wordle!"
+                $grid[($guesscounter - 1)] = $coloredWord
+                $grid
                 $string = ""
                 $grays | sort-object | foreach-object { $string += "$_ " } 
                 write-host "Not in word: $($string.ToUpper())"
@@ -115,13 +156,10 @@ function New-NyWordleGame {
         }
         #loop is broken here, so its to long.
         if ($guessCounter -gt $MaxGuess) {
-            write-host "To many guesses, your at $guessCounter/$maxguess if you continue now!"
-            write-host 'optional feature i might add. add more guessses. is that fun? like add 6 or whatnot'
+            write-host "Failed!"
+            write-host "Answer: $answer"
+            # write-host 'optional feature i might add. add more guessses. is that fun? like add 6 or whatnot'
         }
-        
-        # should be 5 characters long
-        # should be in wordlist
-
     }
     
     end {
